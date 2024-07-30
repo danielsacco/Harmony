@@ -183,8 +183,8 @@ fun Selector(
 
         val representation: Representation =
             when(selectedScale) {
-                Scale.MAYOR -> Representation.FLAT
-                else -> Representation.SHARP
+                Scale.MAYOR -> Representation.MAJOR_SELECTOR
+                else -> Representation.MINOR_SELECTOR
             }
 
         Row(
@@ -332,39 +332,47 @@ enum class Representation(val notes: Array<String>) {
     SHARP(
         arrayOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#")
     ),
-    MAYOR_SHARP(
+    SHARP_E(
+        arrayOf("C", "C#", "D", "D#", "E", "E#", "F#", "G", "G#", "A", "A#", "B", "C", "C#", "D", "D#", "E", "E#", "F#", "G", "G#", "A", "A#")
+    ),
+    SHARP_B(
         arrayOf("B#", "C#", "D", "D#", "E", "E#", "F#", "G", "G#", "A", "A#", "B", "B#", "C#", "D", "D#", "E", "E#", "F#", "G", "G#", "A", "A#")
     ),
-    MAYOR_DOUBLE_SHARP(
-        arrayOf("B#", "C#", "C##", "D#", "E", "E#", "F#", "F##", "G#", "A", "A#", "B", "B#", "C#", "C##", "D#", "E", "E#", "F#", "G", "G#", "A", "A#")
-    ),
     FLAT(
-        arrayOf("C", "D\u266D", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B", "C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭")
+        arrayOf("C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B", "C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭")
     ),
     G_FLAT_MAJOR(
-        arrayOf("C", "D\u266D", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "C♭", "B♭", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭")
+        arrayOf("C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "C♭", "C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭")
     ),
+    MAJOR_SELECTOR(
+        arrayOf("C", "C#", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B")
+    ),
+    MINOR_SELECTOR(
+        arrayOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "B♭", "B")
+    )
 
 }
 
 fun getRepresentation(scale: Scale, tonic: Tonic) = when {
-    scale == Scale.MAYOR && tonic in listOf(Tonic.C, Tonic.D, Tonic.E, Tonic.G, Tonic.A, Tonic.B) -> Representation.SHARP
-    scale == Scale.MAYOR && tonic in listOf(Tonic.G_B) -> Representation.G_FLAT_MAJOR
-    scale == Scale.MAYOR -> Representation.FLAT
+    scale == Scale.MAYOR && tonic in listOf(
+        Tonic.C,
+        Tonic.D,
+        Tonic.E,
+        Tonic.F_SH,
+        Tonic.G,
+        Tonic.A,
+        Tonic.A_SH,
+        Tonic.B
+    ) -> Representation.SHARP
+    scale == Scale.MAYOR && tonic in listOf(Tonic.G_B, Tonic.A_B, Tonic.B_B, Tonic.E_B, Tonic.F) -> Representation.G_FLAT_MAJOR
+    scale == Scale.MAYOR && tonic in listOf(Tonic.C_SH, Tonic.D_SH) -> Representation.SHARP_B
+    scale == Scale.MAYOR -> Representation.SHARP
 
-    scale == Scale.MINOR && tonic in listOf(Tonic.C, Tonic.D) -> Representation.FLAT
+    scale == Scale.MINOR && tonic in listOf(Tonic.D_SH) -> Representation.SHARP_E
+    scale == Scale.MINOR && tonic in listOf(Tonic.C, Tonic.D, Tonic.F, Tonic.G) -> Representation.FLAT
+    scale == Scale.MINOR && tonic in listOf(Tonic.A_SH) -> Representation.SHARP_B
+    scale == Scale.MINOR -> Representation.FLAT
 
-//    scale == Scale.MAYOR && tonic in listOf(Tonic.C_SH) -> Representation.MAYOR_SHARP
-//    scale == Scale.MAYOR && tonic in listOf(
-//        Tonic.D_B,
-//        Tonic.E_B,
-//        Tonic.G_B,
-//        Tonic.A_B,
-//        Tonic.B_B
-//    ) -> Representation.FLAT
-//    scale == Scale.MINOR && tonic in listOf(Tonic.C) -> Representation.FLAT
-//    // Rare cases
-//    scale == Scale.MAYOR && tonic in listOf(Tonic.D_SH) -> Representation.MAYOR_DOUBLE_SHARP
     else -> Representation.SHARP
 }
 
