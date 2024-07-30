@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,10 +15,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -41,8 +49,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             HarmonyTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
+                    MainScreen(
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -52,26 +59,28 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun SampleCircles() {
+fun MainScreen(
+    modifier: Modifier = Modifier,
+) {
 // Creating a Column Layout
     Column(
-        Modifier.fillMaxSize(),
+        modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Pruebitas
-        HarmonicWheel(
-            tonic = Tonic.C,
-            scale = Scale.MINOR,
-        )
+        HarmonicWheel()
     }
 }
 
 @Composable
 fun HarmonicWheel(
-    tonic: Tonic = Tonic.C,
-    scale: Scale = Scale.MAYOR,
+    modifier: Modifier = Modifier,
 ) {
+
+    var scale: Scale by remember { mutableStateOf(Scale.MAYOR) }
+
+    var tonic by remember { mutableStateOf(Tonic.C) }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -79,13 +88,12 @@ fun HarmonicWheel(
             .fillMaxWidth()
             .height(500.dp)
     ) {
-        Text(
-            text = "${tonic.representation} ${scale.scaleName}",
-            fontWeight = FontWeight.Bold
+        Selector(
+            selectedScale = scale,
+            onSelectScale = { newScale -> scale = newScale },
+            selectedTonic = tonic,
+            onSelectTonic = { newTonic -> tonic = newTonic },
         )
-        Spacer(modifier = Modifier.size(20.dp))
-
-        Selector()
 
         Spacer(modifier = Modifier.size(20.dp))
 
@@ -141,44 +149,70 @@ fun HarmonicWheel(
                 style = Stroke(5F)
             )
         }
-
-
-
     }
 }
 
 @Composable
 fun Selector(
-    onSelectScale: () -> Unit = {},
+    onSelectScale: (scale: Scale) -> Unit = {},
+    selectedScale: Scale = Scale.MAYOR,
+    onSelectTonic: (tonic: Tonic) -> Unit = {},
+    selectedTonic: Tonic = Tonic.C,
+    modifier: Modifier = Modifier,
 ) {
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(onClick = {}) {
-                Text(text = "Major")
-            }
-            Button(onClick = {}) {
-                Text(text = "Minor")
-            }
-            Button(onClick = {}) {
-                Text(text = "Chromatic")
-            }
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-
-            Representation.SHARP.notes.forEachIndexed { index, note ->
-                Button(onClick = {}) {
-                    Text(text = note)
+            Scale.entries.forEach { scale ->
+                if( scale == selectedScale) {
+                    Button(onClick = { }) {
+                        Text(text = scale.scaleName)
+                    }
+                } else {
+                    ElevatedButton(onClick = {
+                        onSelectScale(scale)
+                        //onSelectTonic(selectedTonic)
+                    }) {
+                        Text(text = scale.scaleName)
+                    }
                 }
             }
+        }
 
+        val representation: Representation =
+            when(selectedScale) {
+                Scale.MAYOR -> Representation.FLAT
+                else -> Representation.SHARP
+            }
 
-
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            representation.notes.slice(0..<SEMITONES).forEachIndexed {
+                index, note ->
+                if(index == selectedTonic.offsetFromC) {
+                    Button(
+                        onClick = { onSelectTonic(Tonic.fromStringOrDefault(note)) },
+                        modifier = Modifier.width(30.dp),
+                        contentPadding = PaddingValues(horizontal = 0.dp)
+                    ) {
+                        Text(text = note)
+                    }
+                } else {
+                    TextButton(
+                        onClick = { onSelectTonic(Tonic.fromStringOrDefault(note)) },
+                        modifier = Modifier.width(30.dp),
+                        contentPadding = PaddingValues(horizontal = 0.dp)
+                    ) {
+                        Text(
+                            text = note
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -197,19 +231,11 @@ private fun DrawScope.line(
 }
 
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
 @Preview(showBackground = true)
 @Composable
 fun HarmonicWheelPreview() {
     HarmonyTheme {
-        SampleCircles()
+        MainScreen()
     }
 }
 
@@ -238,7 +264,15 @@ enum class Tonic(val offsetFromC: Int, val representation: String) {
     A(9, "A"),
     A_SH(10, "A#"),
     B_B(10, "B♭"),
-    B(11, "B")
+    B(11, "B");
+
+    companion object {
+        fun fromStringOrDefault(note: String): Tonic {
+            return Tonic.entries.find {
+                it.representation == note
+            } ?: C
+        }
+    }
 }
 
 enum class Scale(val scaleName: String, val intervals: Array<Grade>) {
@@ -307,14 +341,30 @@ enum class Representation(val notes: Array<String>) {
     FLAT(
         arrayOf("C", "D\u266D", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B", "C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭")
     ),
-    
+    G_FLAT_MAJOR(
+        arrayOf("C", "D\u266D", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "C♭", "B♭", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭")
+    ),
+
 }
 
 fun getRepresentation(scale: Scale, tonic: Tonic) = when {
-    scale == Scale.MAYOR && tonic in listOf(Tonic.C_SH) -> Representation.MAYOR_SHARP
-    scale == Scale.MAYOR && tonic in listOf(Tonic.D_SH) -> Representation.MAYOR_DOUBLE_SHARP
-    scale == Scale.MAYOR && tonic in listOf(Tonic.D_B) -> Representation.FLAT
-    scale == Scale.MINOR && tonic in listOf(Tonic.C) -> Representation.FLAT
+    scale == Scale.MAYOR && tonic in listOf(Tonic.C, Tonic.D, Tonic.E, Tonic.G, Tonic.A, Tonic.B) -> Representation.SHARP
+    scale == Scale.MAYOR && tonic in listOf(Tonic.G_B) -> Representation.G_FLAT_MAJOR
+    scale == Scale.MAYOR -> Representation.FLAT
+
+    scale == Scale.MINOR && tonic in listOf(Tonic.C, Tonic.D) -> Representation.FLAT
+
+//    scale == Scale.MAYOR && tonic in listOf(Tonic.C_SH) -> Representation.MAYOR_SHARP
+//    scale == Scale.MAYOR && tonic in listOf(
+//        Tonic.D_B,
+//        Tonic.E_B,
+//        Tonic.G_B,
+//        Tonic.A_B,
+//        Tonic.B_B
+//    ) -> Representation.FLAT
+//    scale == Scale.MINOR && tonic in listOf(Tonic.C) -> Representation.FLAT
+//    // Rare cases
+//    scale == Scale.MAYOR && tonic in listOf(Tonic.D_SH) -> Representation.MAYOR_DOUBLE_SHARP
     else -> Representation.SHARP
 }
 
