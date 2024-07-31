@@ -36,10 +36,13 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.des.harmony.ui.theme.HarmonyTheme
 
 class MainActivity : ComponentActivity() {
@@ -154,11 +157,11 @@ fun HarmonicWheel(
 
 @Composable
 fun Selector(
+    modifier: Modifier = Modifier,
     onSelectScale: (scale: Scale) -> Unit = {},
     selectedScale: Scale = Scale.MAYOR,
     onSelectTonic: (tonic: Tonic) -> Unit = {},
     selectedTonic: Tonic = Tonic.C,
-    modifier: Modifier = Modifier,
 ) {
     Column {
         Row(
@@ -183,8 +186,9 @@ fun Selector(
 
         val representation: Representation =
             when(selectedScale) {
-                Scale.MAYOR -> Representation.MAJOR_SELECTOR
-                else -> Representation.MINOR_SELECTOR
+                Scale.MAYOR -> Representation.FLAT_SELECTOR
+                Scale.MINOR -> Representation.SHARP_SELECTOR
+                else -> Representation.CHROMATIC_SELECTOR
             }
 
         Row(
@@ -199,7 +203,10 @@ fun Selector(
                         modifier = Modifier.width(30.dp),
                         contentPadding = PaddingValues(horizontal = 0.dp)
                     ) {
-                        Text(text = note)
+                        Text(
+                            text = note,
+                            fontWeight = FontWeight.W100
+                        )
                     }
                 } else {
                     TextButton(
@@ -208,7 +215,8 @@ fun Selector(
                         contentPadding = PaddingValues(horizontal = 0.dp)
                     ) {
                         Text(
-                            text = note
+                            text = note,
+                            fontSize = 12.sp,
                         )
                     }
                 }
@@ -344,11 +352,14 @@ enum class Representation(val notes: Array<String>) {
     G_FLAT_MAJOR(
         arrayOf("C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "C♭", "C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭")
     ),
-    MAJOR_SELECTOR(
-        arrayOf("C", "C#", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B")
+    FLAT_SELECTOR(
+        arrayOf("C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B")
     ),
-    MINOR_SELECTOR(
-        arrayOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "B♭", "B")
+    SHARP_SELECTOR(
+        arrayOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
+    ),
+    CHROMATIC_SELECTOR(
+        arrayOf("C", "C#/D♭", "D", "D#/E♭", "E", "F", "F#/G♭", "G", "G#/A♭", "A", "A#/B♭", "B")
     )
 
 }
