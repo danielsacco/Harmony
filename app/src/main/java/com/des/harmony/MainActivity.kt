@@ -34,13 +34,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.des.harmony.ui.theme.HarmonyTheme
@@ -104,54 +103,172 @@ fun HarmonicWheel(
         val semitonesInScale = scale.intervals.map { it.semitones }
         val notes = getRepresentation(scale, tonic).notes
 
-        Canvas(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            val circlesDifferenceInPx = 25.dp.toPx()
+        Wheel(semitonesInScale, notes, tonic, textMeasurer)
+    }
+}
 
-            semitonesInScale.forEach {
+@Composable
+private fun NewWheel(
+    notesArray: Array<String?>,
+) {
+    val textMeasurer = rememberTextMeasurer()
+
+    val notes = if(notesArray.size == 12) notesArray else emptySemitonesArray
+
+    Canvas(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        val radiusDifference = 25.dp.toPx()
+
+        val lineVerticalEnd = center.y - (size.minDimension / 2 - radiusDifference * 2)
+        val lineEnd = center.copy(y = lineVerticalEnd)
+
+        notes.forEachIndexed { index, note ->
+            note?.let {
                 // Draw lines
                 withTransform({
-                    rotate(DELTA_ANGLE * it)
+                    rotate(DELTA_ANGLE * index)
                 }) {
-                    line(center, center.copy(y = circlesDifferenceInPx))
+                    line(center, lineEnd)
                 }
 
-                val note = notes[it + tonic.offsetFromC]
-                val noteSize = textMeasurer.measure(note).size
+                drawNote(textMeasurer, note, index, radiusDifference)
 
-                val xPos = size.center.x + size.minDimension * xFactor[it]
-                val yPos = size.center.y + size.minDimension * yFactor[it]
+                drawInterval(textMeasurer, index, radiusDifference * 2)
 
-                val position = Offset(
-                    x = xPos - (noteSize.width/2) - circlesDifferenceInPx * xFactor[it],
-                    y = yPos - (noteSize.height/2) - circlesDifferenceInPx * yFactor[it],
-                )
-
-                drawText(
-                    textMeasurer = textMeasurer,
-                    text = note,
-                    topLeft = position,
-                    style = TextStyle.Default.copy(
-                        fontWeight = FontWeight.Bold
-                    )
-                )
             }
 
-            drawCircle(
-                color = Color(0xff0f9d58),
-                center = center,
-                radius = size.minDimension / 2,
-                style = Stroke(5F)
+        }
+
+        drawCircle(
+            color = Color(0xff0f9d58),
+            center = center,
+            radius = size.minDimension / 2,
+            style = Stroke(5F)
+        )
+
+        drawCircle(
+            color = Color(0xff0f9d58),
+            center = center,
+            radius = (size.minDimension / 2) - radiusDifference,
+            style = Stroke(5F)
+        )
+
+        drawCircle(
+            color = Color(0xff0f9d58),
+            center = center,
+            radius = (size.minDimension / 2) - radiusDifference * 2,
+            style = Stroke(5F)
+        )
+    }
+}
+
+private fun DrawScope.drawNote(
+    textMeasurer: TextMeasurer,
+    note: String,
+    index: Int,
+    radiusDifference: Float
+) {
+    val noteSize = textMeasurer.measure(note).size
+
+    val xPos = size.center.x + size.minDimension * xFactor[index]
+    val yPos = size.center.y + size.minDimension * yFactor[index]
+
+    val position = Offset(
+        x = xPos - (noteSize.width / 2) - radiusDifference * xFactor[index],
+        y = yPos - (noteSize.height / 2) - radiusDifference * yFactor[index],
+    )
+
+    drawText(
+        textMeasurer = textMeasurer,
+        text = note,
+        topLeft = position,
+        style = TextStyle.Default.copy(
+            fontWeight = FontWeight.Bold
+        )
+    )
+}
+
+private fun DrawScope.drawInterval(
+    textMeasurer: TextMeasurer,
+    index: Int,
+    radiusDifference: Float
+) {
+    val interval = intervals[index]
+    val intervalSize = textMeasurer.measure(interval).size
+
+    val xPos = size.center.x + size.minDimension * xFactor[index]
+    val yPos = size.center.y + size.minDimension * yFactor[index]
+
+    val position = Offset(
+        x = xPos - (intervalSize.width / 2) - radiusDifference * xFactor[index],
+        y = yPos - (intervalSize.height / 2) - radiusDifference * yFactor[index],
+    )
+
+    drawText(
+        textMeasurer = textMeasurer,
+        text = interval,
+        topLeft = position,
+        style = TextStyle.Default.copy(
+            fontWeight = FontWeight.Bold
+        )
+    )
+}
+
+@Composable
+private fun Wheel(
+    semitonesInScale: List<Int>,
+    notes: Array<String>,
+    tonic: Tonic,
+    textMeasurer: TextMeasurer
+) {
+    Canvas(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        val circlesDifferenceInPx = 25.dp.toPx()
+
+        semitonesInScale.forEach {
+            // Draw lines
+            withTransform({
+                rotate(DELTA_ANGLE * it)
+            }) {
+                line(center, center.copy(y = circlesDifferenceInPx))
+            }
+
+            val note = notes[it + tonic.offsetFromC]
+            val noteSize = textMeasurer.measure(note).size
+
+            val xPos = size.center.x + size.minDimension * xFactor[it]
+            val yPos = size.center.y + size.minDimension * yFactor[it]
+
+            val position = Offset(
+                x = xPos - (noteSize.width / 2) - circlesDifferenceInPx * xFactor[it],
+                y = yPos - (noteSize.height / 2) - circlesDifferenceInPx * yFactor[it],
             )
 
-            drawCircle(
-                color = Color(0xff0f9d58),
-                center = center,
-                radius = (size.minDimension / 2) - circlesDifferenceInPx,
-                style = Stroke(5F)
+            drawText(
+                textMeasurer = textMeasurer,
+                text = note,
+                topLeft = position,
+                style = TextStyle.Default.copy(
+                    fontWeight = FontWeight.Bold
+                )
             )
         }
+
+        drawCircle(
+            color = Color(0xff0f9d58),
+            center = center,
+            radius = size.minDimension / 2,
+            style = Stroke(5F)
+        )
+
+        drawCircle(
+            color = Color(0xff0f9d58),
+            center = center,
+            radius = (size.minDimension / 2) - circlesDifferenceInPx,
+            style = Stroke(5F)
+        )
     }
 }
 
@@ -238,6 +355,18 @@ private fun DrawScope.line(
     )
 }
 
+@Preview(showBackground = true)
+@Composable
+fun NewWheelPreview() {
+
+    HarmonyTheme {
+        NewWheel(
+            notesArray = MAYOR_SCALE_C,
+        )
+    }
+}
+
+val MAYOR_SCALE_C: Array<String?> = arrayOf("C", null, "D", null, "E", "F", null, "G", null, "A", null, "B")
 
 @Preview(showBackground = true)
 @Composable
@@ -247,6 +376,9 @@ fun HarmonicWheelPreview() {
     }
 }
 
+val emptySemitonesArray: Array<String?> = Array(12) { null }
+
+val intervals: Array<String> = arrayOf("T", "2m", "2M", "3m", "3M", "4", "4A", "5", "6m", "6M", "7m", "7M")
 
 const val SEMITONES = 12
 const val DELTA_ANGLE = 360F / SEMITONES
