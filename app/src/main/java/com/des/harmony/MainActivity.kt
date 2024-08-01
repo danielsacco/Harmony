@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -179,12 +180,15 @@ private fun DrawScope.drawNote(
         y = yPos - (noteSize.height / 2) - radiusDifference * yFactor[index],
     )
 
+    val fontWeight = if(index ==0) FontWeight.Bold else FontWeight.Normal
+    
     drawText(
         textMeasurer = textMeasurer,
         text = note,
         topLeft = position,
         style = TextStyle.Default.copy(
-            fontWeight = FontWeight.Bold
+            fontWeight = fontWeight,
+            fontSize = 20.sp,
         )
     )
 }
@@ -197,20 +201,28 @@ private fun DrawScope.drawInterval(
     val interval = intervals[index]
     val intervalSize = textMeasurer.measure(interval).size
 
-    val xPos = size.center.x + size.minDimension * xFactor[index]
-    val yPos = size.center.y + size.minDimension * yFactor[index]
+    val xPos = size.center.x + (size.minDimension - radiusDifference) * xFactor[index]
+    val yPos = size.center.y + (size.minDimension - radiusDifference) * yFactor[index]
 
     val position = Offset(
-        x = xPos - (intervalSize.width / 2) - radiusDifference * xFactor[index],
-        y = yPos - (intervalSize.height / 2) - radiusDifference * yFactor[index],
+        x = xPos,
+        y = yPos,
     )
+
+//    val position = Offset(
+//        x = xPos - (intervalSize.width / 2) - radiusDifference * xFactor[index],
+//        y = yPos - (intervalSize.height / 2) - radiusDifference * yFactor[index],
+//    )
+
+    val fontWeight = if(index ==0) FontWeight.Bold else FontWeight.Normal
 
     drawText(
         textMeasurer = textMeasurer,
         text = interval,
         topLeft = position,
         style = TextStyle.Default.copy(
-            fontWeight = FontWeight.Bold
+            fontWeight = fontWeight,
+            //fontSize = 20.sp,
         )
     )
 }
