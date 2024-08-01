@@ -29,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -41,6 +40,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.center
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.des.harmony.ui.theme.HarmonyTheme
@@ -71,12 +71,14 @@ fun MainScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        HarmonicWheel()
+        WheelAndSelector()
+
+        
     }
 }
 
 @Composable
-fun HarmonicWheel(
+fun WheelAndSelector(
     modifier: Modifier = Modifier,
 ) {
 
@@ -100,13 +102,61 @@ fun HarmonicWheel(
 
         Spacer(modifier = Modifier.size(20.dp))
 
-        val textMeasurer = rememberTextMeasurer()
-        val semitonesInScale = scale.intervals.map { it.semitones }
-        val notes = getRepresentation(scale, tonic).notes
+        val notesArray: Array<String?> = getNotesArrayFor(tonic, scale)
 
-        Wheel(semitonesInScale, notes, tonic, textMeasurer)
+        NewWheel(notesArray = notesArray)
     }
 }
+
+fun getNotesArrayFor(tonic: Tonic, scale: Scale): Array<String?> =
+    when (scale) {
+        Scale.MAYOR -> {
+            when(tonic) {
+                Tonic.C -> MAJOR_C
+                Tonic.C_SH -> MAJOR_C_SH
+                Tonic.D_FL -> MAJOR_D_FL
+                Tonic.D -> MAJOR_D
+                Tonic.D_SH -> MAJOR_D_SH
+                Tonic.E_FL -> MAJOR_E_FL
+                Tonic.E -> MAJOR_E
+                Tonic.F -> MAJOR_F
+                Tonic.F_SH -> MAJOR_F_SH
+                Tonic.G_FL -> MAJOR_G_FL
+                Tonic.G -> MAJOR_G
+                Tonic.G_SH -> MAJOR_G_SH
+                Tonic.A_FL -> MAJOR_A_FL
+                Tonic.A -> MAJOR_A
+                Tonic.A_SH -> MAJOR_A_SH
+                Tonic.B_FL -> MAJOR_B_FL
+                Tonic.B -> MAJOR_B
+            }
+
+        }
+        Scale.MINOR -> {
+            when(tonic) {
+                Tonic.C -> MINOR_C
+                Tonic.C_SH -> TODO()
+                Tonic.D_FL -> TODO()
+                Tonic.D -> TODO()
+                Tonic.D_SH -> TODO()
+                Tonic.E_FL -> TODO()
+                Tonic.E -> TODO()
+                Tonic.F -> TODO()
+                Tonic.F_SH -> TODO()
+                Tonic.G_FL -> TODO()
+                Tonic.G -> TODO()
+                Tonic.G_SH -> TODO()
+                Tonic.A_FL -> TODO()
+                Tonic.A -> TODO()
+                Tonic.A_SH -> TODO()
+                Tonic.B_FL -> TODO()
+                Tonic.B -> TODO()
+            }
+        }
+
+    }
+
+
 
 @Composable
 private fun NewWheel(
@@ -119,9 +169,9 @@ private fun NewWheel(
     Canvas(
         modifier = Modifier.fillMaxSize()
     ) {
-        val radiusDifference = 25.dp.toPx()
+        val rimWidth = (textDp + spaceDp).toPx()
 
-        val lineVerticalEnd = center.y - (size.minDimension / 2 - radiusDifference * 2)
+        val lineVerticalEnd = center.y - (size.minDimension / 2 - rimWidth * 2.6f)
         val lineEnd = center.copy(y = lineVerticalEnd)
 
         notes.forEachIndexed { index, note ->
@@ -133,12 +183,13 @@ private fun NewWheel(
                     line(center, lineEnd)
                 }
 
-                drawNote(textMeasurer, note, index, radiusDifference)
+                val notesRadius = (size.minDimension / 2) - rimWidth / 2
+                drawTextOnCircle(textMeasurer, note, index, notesRadius)
 
-                drawInterval(textMeasurer, index, radiusDifference * 2)
-
+                val intervalsRadius = (size.minDimension / 2) - rimWidth * 1.9f
+                drawTextOnCircle(textMeasurer, intervals[index], index, intervalsRadius)
+                //drawInterval(textMeasurer, index, intervalsRadius)
             }
-
         }
 
         drawCircle(
@@ -151,137 +202,46 @@ private fun NewWheel(
         drawCircle(
             color = Color(0xff0f9d58),
             center = center,
-            radius = (size.minDimension / 2) - radiusDifference,
+            radius = (size.minDimension / 2) - rimWidth * 1.2f,
             style = Stroke(5F)
         )
 
         drawCircle(
             color = Color(0xff0f9d58),
             center = center,
-            radius = (size.minDimension / 2) - radiusDifference * 2,
+            radius = (size.minDimension / 2) - rimWidth * 2.6f,
             style = Stroke(5F)
         )
     }
 }
 
-private fun DrawScope.drawNote(
+private fun DrawScope.drawTextOnCircle(
     textMeasurer: TextMeasurer,
-    note: String,
+    text: String,
     index: Int,
-    radiusDifference: Float
+    radius: Float
 ) {
-    val noteSize = textMeasurer.measure(note).size
+    val noteSize = textMeasurer.measure(text).size
 
-    val xPos = size.center.x + size.minDimension * xFactor[index]
-    val yPos = size.center.y + size.minDimension * yFactor[index]
+    val xPos = size.center.x + radius * xFactor[index] * 2
+    val yPos = size.center.y + radius * yFactor[index] * 2
 
     val position = Offset(
-        x = xPos - (noteSize.width / 2) - radiusDifference * xFactor[index],
-        y = yPos - (noteSize.height / 2) - radiusDifference * yFactor[index],
+        x = xPos - noteSize.center.x,
+        y = yPos - noteSize.center.y,
     )
 
     val fontWeight = if(index ==0) FontWeight.Bold else FontWeight.Normal
     
     drawText(
         textMeasurer = textMeasurer,
-        text = note,
+        text = text,
         topLeft = position,
         style = TextStyle.Default.copy(
             fontWeight = fontWeight,
             fontSize = 20.sp,
         )
     )
-}
-
-private fun DrawScope.drawInterval(
-    textMeasurer: TextMeasurer,
-    index: Int,
-    radiusDifference: Float
-) {
-    val interval = intervals[index]
-    val intervalSize = textMeasurer.measure(interval).size
-
-    val xPos = size.center.x + (size.minDimension - radiusDifference) * xFactor[index]
-    val yPos = size.center.y + (size.minDimension - radiusDifference) * yFactor[index]
-
-    val position = Offset(
-        x = xPos,
-        y = yPos,
-    )
-
-//    val position = Offset(
-//        x = xPos - (intervalSize.width / 2) - radiusDifference * xFactor[index],
-//        y = yPos - (intervalSize.height / 2) - radiusDifference * yFactor[index],
-//    )
-
-    val fontWeight = if(index ==0) FontWeight.Bold else FontWeight.Normal
-
-    drawText(
-        textMeasurer = textMeasurer,
-        text = interval,
-        topLeft = position,
-        style = TextStyle.Default.copy(
-            fontWeight = fontWeight,
-            //fontSize = 20.sp,
-        )
-    )
-}
-
-@Composable
-private fun Wheel(
-    semitonesInScale: List<Int>,
-    notes: Array<String>,
-    tonic: Tonic,
-    textMeasurer: TextMeasurer
-) {
-    Canvas(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        val circlesDifferenceInPx = 25.dp.toPx()
-
-        semitonesInScale.forEach {
-            // Draw lines
-            withTransform({
-                rotate(DELTA_ANGLE * it)
-            }) {
-                line(center, center.copy(y = circlesDifferenceInPx))
-            }
-
-            val note = notes[it + tonic.offsetFromC]
-            val noteSize = textMeasurer.measure(note).size
-
-            val xPos = size.center.x + size.minDimension * xFactor[it]
-            val yPos = size.center.y + size.minDimension * yFactor[it]
-
-            val position = Offset(
-                x = xPos - (noteSize.width / 2) - circlesDifferenceInPx * xFactor[it],
-                y = yPos - (noteSize.height / 2) - circlesDifferenceInPx * yFactor[it],
-            )
-
-            drawText(
-                textMeasurer = textMeasurer,
-                text = note,
-                topLeft = position,
-                style = TextStyle.Default.copy(
-                    fontWeight = FontWeight.Bold
-                )
-            )
-        }
-
-        drawCircle(
-            color = Color(0xff0f9d58),
-            center = center,
-            radius = size.minDimension / 2,
-            style = Stroke(5F)
-        )
-
-        drawCircle(
-            color = Color(0xff0f9d58),
-            center = center,
-            radius = (size.minDimension / 2) - circlesDifferenceInPx,
-            style = Stroke(5F)
-        )
-    }
 }
 
 @Composable
@@ -367,24 +327,43 @@ private fun DrawScope.line(
     )
 }
 
+val MAJOR_C: Array<String?> = arrayOf("C", null, "D", null, "E", "F", null, "G", null, "A", null, "B")
+val MAJOR_C_SH: Array<String?> = arrayOf("C#", null, "D#", null, "E#", "F#", null, "G#", null, "A#", null, "B#")
+val MAJOR_D_FL: Array<String?> = arrayOf("D♭", null, "E♭", null, "F", "G♭", null, "A♭", null, "B♭", null, "C")
+val MAJOR_D: Array<String?> = arrayOf("D", null, "E", null, "F#", "G", null, "A", null, "B", null, "C#")
+val MAJOR_D_SH: Array<String?> = arrayOf("D#", null, "E#", null, "F##", "G#", null, "A#", null, "B#", null, "C##")
+val MAJOR_E_FL: Array<String?> = arrayOf("E♭", null, "F", null, "G", "A♭", null, "B♭", null, "C", null, "C")
+val MAJOR_E: Array<String?> = arrayOf("E", null, "F#", null, "G#", "A", null, "B", null, "C", null, "D#")
+val MAJOR_F: Array<String?> = arrayOf("F", null, "G", null, "A", "B♭", null, "C", null, "D", null, "E")
+val MAJOR_F_SH: Array<String?> = arrayOf("F#", null, "G#", null, "A#", "B", null, "C#", null, "D#", null, "E#")
+val MAJOR_G_FL: Array<String?> = arrayOf("G♭", null, "A♭", null, "B♭", "C♭", null, "D♭", null, "E♭", null, "F")
+val MAJOR_G: Array<String?> = arrayOf("G", null, "A", null, "B", "C", null, "D", null, "E", null, "F#")
+val MAJOR_G_SH: Array<String?> = arrayOf("G#", null, "A#", null, "B#", "C#", null, "D#", null, "E#", null, "F##")
+val MAJOR_A_FL: Array<String?> = arrayOf("A♭", null, "B♭", null, "C", "D♭", null, "E♭", null, "F", null, "G")
+val MAJOR_A: Array<String?> = arrayOf("A", null, "B", null, "C#", "D", null, "E", null, "F#", null, "G#")
+val MAJOR_A_SH: Array<String?> = arrayOf("A#", null, "B#", null, "C##", "D#", null, "E#", null, "F##", null, "G##")
+val MAJOR_B_FL: Array<String?> = arrayOf("B♭", null, "C", null, "D", "E♭", null, "F", null, "G", null, "A")
+val MAJOR_B: Array<String?> = arrayOf("B", null, "C#", null, "D#", "E", null, "F#", null, "G#", null, "A#")
+
+// TODO !!!
+val MINOR_C: Array<String?> = arrayOf("C", null, "D", "E♭", null, "F", null, "G", "Ab", null, "B♭", null)
+
 @Preview(showBackground = true)
+@Composable
+fun MainScreenPreview() {
+    HarmonyTheme {
+        MainScreen()
+    }
+}
+
+//@Preview(showBackground = true)
 @Composable
 fun NewWheelPreview() {
 
     HarmonyTheme {
         NewWheel(
-            notesArray = MAYOR_SCALE_C,
+            notesArray = MINOR_C,
         )
-    }
-}
-
-val MAYOR_SCALE_C: Array<String?> = arrayOf("C", null, "D", null, "E", "F", null, "G", null, "A", null, "B")
-
-@Preview(showBackground = true)
-@Composable
-fun HarmonicWheelPreview() {
-    HarmonyTheme {
-        MainScreen()
     }
 }
 
@@ -402,20 +381,20 @@ val yFactor = arrayOf(-0.5f, -0.433f, -0.25f, 0f, 0.25f, 0.433f, 0.5f, 0.433f, 0
 enum class Tonic(val offsetFromC: Int, val representation: String) {
     C(0, "C"),
     C_SH(1, "C#"),
-    D_B(1, "D♭"),
+    D_FL(1, "D♭"),
     D(2, "D"),
     D_SH(3, "D#"),
-    E_B(3, "E♭"),
+    E_FL(3, "E♭"),
     E(4, "E"),
     F(5, "F"),
     F_SH(6, "F#"),
-    G_B(6, "G♭"),
+    G_FL(6, "G♭"),
     G(7, "G"),
     G_SH(8, "G#"),
-    A_B(8, "A♭"),
+    A_FL(8, "A♭"),
     A(9, "A"),
     A_SH(10, "A#"),
-    B_B(10, "B♭"),
+    B_FL(10, "B♭"),
     B(11, "B");
 
     companion object {
@@ -427,57 +406,10 @@ enum class Tonic(val offsetFromC: Int, val representation: String) {
     }
 }
 
-enum class Scale(val scaleName: String, val intervals: Array<Grade>) {
-    MAYOR("Major", arrayOf(
-        Grade.TONIC,
-        Grade.MAYOR_2ND,
-        Grade.MAYOR_3ND,
-        Grade.JUST_4TH,
-        Grade.JUST_5TH,
-        Grade.MAYOR_6TH,
-        Grade.MAYOR_7TH
-    )),
-    MINOR("Minor", arrayOf(
-        Grade.TONIC,
-        Grade.MAYOR_2ND,
-        Grade.MINOR_3ND,
-        Grade.JUST_4TH,
-        Grade.JUST_5TH,
-        Grade.MINOR_6TH,
-        Grade.MINOR_7TH
-    )),
-    CHROMATIC("Chromatic", arrayOf(
-        Grade.TONIC,
-        Grade.MINOR_2ND,
-        Grade.MAYOR_2ND,
-        Grade.MINOR_3ND,
-        Grade.MAYOR_3ND,
-        Grade.JUST_4TH,
-        Grade.DIM_5TH,
-        Grade.JUST_5TH,
-        Grade.MINOR_6TH,
-        Grade.MAYOR_6TH,
-        Grade.MINOR_7TH,
-        Grade.MAYOR_7TH
-    ))
-}
-
-enum class Grade(
-    val semitones: Int,
-    val symbol: String,
-) {
-    TONIC(0, "T"),
-    MINOR_2ND(1, "2m"),
-    MAYOR_2ND(2, "2M"),
-    MINOR_3ND(3, "3m"),
-    MAYOR_3ND(4, "3M"),
-    JUST_4TH(5, "4"),
-    DIM_5TH(6, "5 dim"),
-    JUST_5TH(7, "5"),
-    MINOR_6TH(8, "6m"),
-    MAYOR_6TH(9, "6M"),
-    MINOR_7TH(10, "7m"),
-    MAYOR_7TH(11, "7M"),
+enum class Scale(val scaleName: String) {
+    MAYOR("Major"),
+    MINOR("Minor"),
+    //CHROMATIC("Chromatic")
 }
 
 enum class Representation(val notes: Array<String>) {
@@ -508,26 +440,5 @@ enum class Representation(val notes: Array<String>) {
 
 }
 
-fun getRepresentation(scale: Scale, tonic: Tonic) = when {
-    scale == Scale.MAYOR && tonic in listOf(
-        Tonic.C,
-        Tonic.D,
-        Tonic.E,
-        Tonic.F_SH,
-        Tonic.G,
-        Tonic.A,
-        Tonic.A_SH,
-        Tonic.B
-    ) -> Representation.SHARP
-    scale == Scale.MAYOR && tonic in listOf(Tonic.G_B, Tonic.A_B, Tonic.B_B, Tonic.E_B, Tonic.F) -> Representation.G_FLAT_MAJOR
-    scale == Scale.MAYOR && tonic in listOf(Tonic.C_SH, Tonic.D_SH) -> Representation.SHARP_B
-    scale == Scale.MAYOR -> Representation.SHARP
-
-    scale == Scale.MINOR && tonic in listOf(Tonic.D_SH) -> Representation.SHARP_E
-    scale == Scale.MINOR && tonic in listOf(Tonic.C, Tonic.D, Tonic.F, Tonic.G) -> Representation.FLAT
-    scale == Scale.MINOR && tonic in listOf(Tonic.A_SH) -> Representation.SHARP_B
-    scale == Scale.MINOR -> Representation.FLAT
-
-    else -> Representation.SHARP
-}
-
+val textDp = 25.dp
+val spaceDp = 6.dp
