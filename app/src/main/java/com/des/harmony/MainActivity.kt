@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
-import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,6 +41,8 @@ import androidx.compose.ui.unit.center
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.des.harmony.model.NotesSolver.notesFor
+import com.des.harmony.model.SHOW_NOTES_WITH_FLAT
+import com.des.harmony.model.SHOW_NOTES_WITH_SHARP
 import com.des.harmony.model.enums.Accidental
 import com.des.harmony.model.enums.PitchClass
 import com.des.harmony.model.enums.Scale
@@ -73,26 +74,18 @@ fun MainScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        WheelAndSelector()
-
-        
+        ScalesScreen()
     }
 }
 
 @Composable
-fun WheelAndSelector(
+fun ScalesScreen(
     modifier: Modifier = Modifier,
 ) {
-
-//    var scale: Scale by remember { mutableStateOf(Scale.MAYOR) }
-//
-//    var tonic by remember { mutableStateOf(Tonic.C) }
-
     var selectedScale by remember { mutableStateOf(Scale.MAYOR) }
-
     var selectedPitchClass by remember { mutableStateOf(PitchClass.C) }
-
     var selectedAccidental by remember { mutableStateOf(Accidental.NATURAL) }
+    var selectorNotes by remember { mutableStateOf(SHOW_NOTES_WITH_FLAT)}
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -101,43 +94,59 @@ fun WheelAndSelector(
             .fillMaxWidth()
             .height(500.dp)
     ) {
+        // Scale Selector
         SelectorStrip(
             texts = Scale.entries.map { it.scaleName },
             selectedIndex = Scale.entries.indexOf(selectedScale),
             onSelect = { index ->
                 selectedScale = Scale.entries[index]
+                selectorNotes = when(selectedScale) {
+                    Scale.MAYOR,
+                    Scale.DOMINANT -> SHOW_NOTES_WITH_FLAT
+                    else -> SHOW_NOTES_WITH_SHARP
+                }
+                selectedAccidental = accidentalForPitchAndScale(selectedPitchClass, selectedScale)
             },
         )
+        // Pitch Selector
         SelectorStrip(
-            // TODO: strip based on selected scale
-            texts = listOf(
-                "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "B♭", "B"
-            ),
+            texts = selectorNotes,
             selectedIndex = PitchClass.entries.indexOf(selectedPitchClass),
             onSelect = { index ->
                 selectedPitchClass = PitchClass.entries[index]
-                selectedAccidental = if(selectedPitchClass.isNatural) {
-                    Accidental.NATURAL
-                } else {
-                    // TODO: accidental based on selected scale
-                    Accidental.SHARP
-                }
+                selectedAccidental = accidentalForPitchAndScale(selectedPitchClass, selectedScale)
             },
             modifier = modifier.width(30.dp)
         )
 
-        NewWheel(
-            notesList = notesFor(
-                selectedScale = selectedScale,
-                selectedPitchClass = selectedPitchClass,
-                selectedAccidental = selectedAccidental
-            )
+        val notesToShowOnWheel = notesFor(
+            selectedScale = selectedScale,
+            selectedPitchClass = selectedPitchClass,
+            selectedAccidental = selectedAccidental,
+        )
+
+        NotesWheel(
+            notesList = notesToShowOnWheel,
         )
     }
 }
 
+private fun accidentalForPitchAndScale(
+    selectedPitchClass: PitchClass,
+    selectedScale: Scale
+) = if (selectedPitchClass.isNatural) {
+    Accidental.NATURAL
+} else {
+    when (selectedScale) {
+        Scale.MAYOR,
+        Scale.DOMINANT -> Accidental.FLAT
+
+        else -> Accidental.SHARP
+    }
+}
+
 @Composable
-private fun NewWheel(
+private fun NotesWheel(
     notesList: List<String?>,
 ) {
     val textMeasurer = rememberTextMeasurer()
@@ -263,77 +272,6 @@ fun SelectorStrip(
     }
 }
 
-@Composable
-fun Selector(
-    modifier: Modifier = Modifier,
-    onSelectScale: (scale: Scale) -> Unit = {},
-    selectedScale: Scale = Scale.MAYOR,
-    onSelectTonic: (tonic: Tonic) -> Unit = {},
-    selectedTonic: Tonic = Tonic.C,
-) {
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Scale.entries.forEach { scale ->
-                if( scale == selectedScale) {
-                    Button(onClick = { }) {
-                        Text(text = scale.scaleName)
-                    }
-                } else {
-                    ElevatedButton(onClick = {
-                        onSelectScale(scale)
-                        //onSelectTonic(selectedTonic)
-                    }) {
-                        Text(text = scale.scaleName)
-                    }
-                }
-            }
-        }
-
-        val representation: Representation =
-            when(selectedScale) {
-                Scale.MAYOR -> Representation.MAJOR_SELECTOR
-                Scale.MINOR -> Representation.MINOR_SELECTOR
-                else -> Representation.CHROMATIC_SELECTOR
-            }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            representation.notes.slice(0..<SEMITONES).forEachIndexed {
-                index, note ->
-                if(index == selectedTonic.offsetFromC) {
-                    Button(
-                        onClick = { onSelectTonic(Tonic.fromStringOrDefault(note)) },
-                        modifier = Modifier.width(30.dp),
-                        contentPadding = PaddingValues(horizontal = 0.dp)
-                    ) {
-                        Text(
-                            text = note,
-                            fontWeight = FontWeight.W100
-                        )
-                    }
-                } else {
-                    TextButton(
-                        onClick = { onSelectTonic(Tonic.fromStringOrDefault(note)) },
-                        modifier = Modifier.width(30.dp),
-                        contentPadding = PaddingValues(horizontal = 0.dp)
-                    ) {
-                        Text(
-                            text = note,
-                            fontSize = 12.sp,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-
 private fun DrawScope.line(
     start: Offset,
     end: Offset
@@ -355,7 +293,6 @@ fun MainScreenPreview() {
 }
 
 
-
 const val SEMITONES = 12
 const val DELTA_ANGLE = 360F / SEMITONES
 val emptySemitonesList: List<String?> = List(SEMITONES) { null }
@@ -364,47 +301,6 @@ val intervals: List<String> = listOf("T", "2m", "2M", "3m", "3M", "4", "4A", "5"
 // X and Y offset for each semitone positioning
 val xFactor = listOf(0f, 0.25f, 0.433f, 0.5f, 0.433f, 0.25f, 0f, - 0.25f, -0.433f, -0.5f, -0.433f, -0.25f)
 val yFactor = listOf(-0.5f, -0.433f, -0.25f, 0f, 0.25f, 0.433f, 0.5f, 0.433f, 0.25f, 0f, -0.25f, -0.433f)
-
-enum class Tonic(val offsetFromC: Int, val representation: String) {
-    C(0, "C"),
-    C_SH(1, "C#"),
-    D_FL(1, "D♭"),
-    D(2, "D"),
-    D_SH(3, "D#"),
-    E_FL(3, "E♭"),
-    E(4, "E"),
-    F(5, "F"),
-    F_SH(6, "F#"),
-    G_FL(6, "G♭"),
-    G(7, "G"),
-    G_SH(8, "G#"),
-    A_FL(8, "A♭"),
-    A(9, "A"),
-    A_SH(10, "A#"),
-    B_FL(10, "B♭"),
-    B(11, "B");
-
-    companion object {
-        fun fromStringOrDefault(note: String): Tonic {
-            return Tonic.entries.find {
-                it.representation == note
-            } ?: C
-        }
-    }
-}
-
-enum class Representation(val notes: List<String>) {
-    MAJOR_SELECTOR(
-        listOf("C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B")
-    ),
-    MINOR_SELECTOR(
-        listOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "B♭", "B")
-    ),
-    CHROMATIC_SELECTOR(
-        listOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
-    )
-
-}
 
 val textDp = 25.dp
 val spaceDp = 6.dp

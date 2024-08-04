@@ -10,6 +10,10 @@ val MODE_V_MIXOLYDIAN: Mode = MODE_IV_LYDIAN.rotateLeft(2)
 val MODE_VI_AEOLIAN: Mode = MODE_V_MIXOLYDIAN.rotateLeft(2)
 val MODE_VII_LOCRIAN: Mode = MODE_VI_AEOLIAN.rotateLeft(2)
 
+val SHOW_NOTES_WITH_SHARP = listOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
+val SHOW_NOTES_WITH_FLAT = listOf("C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B")
+
+
 typealias ScaleNotes = List<Boolean>
 
 val SCALE_MAJOR: ScaleNotes = listOf(true, false, true, false, true, true, false, true, false, true, false, true)
