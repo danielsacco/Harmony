@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.center
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.des.harmony.model.NotesSolver.notesFor
+import com.des.harmony.model.enums.Accidental
 import com.des.harmony.model.enums.PitchClass
 import com.des.harmony.model.enums.Scale
 import com.des.harmony.ui.theme.HarmonyTheme
@@ -91,6 +92,8 @@ fun WheelAndSelector(
 
     var selectedPitchClass by remember { mutableStateOf(PitchClass.C) }
 
+    var selectedAccidental by remember { mutableStateOf(Accidental.NATURAL) }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -99,114 +102,47 @@ fun WheelAndSelector(
             .height(500.dp)
     ) {
         SelectorStrip(
-            texts = Scale.entries.map { it.scaleName }.toTypedArray(),
+            texts = Scale.entries.map { it.scaleName },
             selectedIndex = Scale.entries.indexOf(selectedScale),
             onSelect = { index ->
-                selectedScale = Scale.entries.get(index)
+                selectedScale = Scale.entries[index]
             },
         )
         SelectorStrip(
-            texts = arrayOf(
+            // TODO: strip based on selected scale
+            texts = listOf(
                 "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "B♭", "B"
             ),
             selectedIndex = PitchClass.entries.indexOf(selectedPitchClass),
             onSelect = { index ->
-                selectedPitchClass = PitchClass.entries.get(index)
+                selectedPitchClass = PitchClass.entries[index]
+                selectedAccidental = if(selectedPitchClass.isNatural) {
+                    Accidental.NATURAL
+                } else {
+                    // TODO: accidental based on selected scale
+                    Accidental.SHARP
+                }
             },
             modifier = modifier.width(30.dp)
         )
 
         NewWheel(
-            notesArray = notesFor(selectedScale, selectedPitchClass)
+            notesList = notesFor(
+                selectedScale = selectedScale,
+                selectedPitchClass = selectedPitchClass,
+                selectedAccidental = selectedAccidental
+            )
         )
-
-//        Selector(
-//            selectedScale = scale,
-//            onSelectScale = { newScale -> scale = newScale },
-//            selectedTonic = tonic,
-//            onSelectTonic = { newTonic -> tonic = newTonic },
-//        )
-
-        //NewWheel(notesArray = getNotesArrayFor(tonic, scale))
     }
 }
 
-fun getNotesArrayFor(tonic: Tonic, scale: Scale): Array<String?> =
-    when (scale) {
-        Scale.MAYOR -> {
-            when(tonic) {
-                Tonic.C -> MAJOR_C
-                Tonic.C_SH -> MAJOR_C_SH
-                Tonic.D_FL -> MAJOR_D_FL
-                Tonic.D -> MAJOR_D
-                Tonic.D_SH -> MAJOR_D_SH
-                Tonic.E_FL -> MAJOR_E_FL
-                Tonic.E -> MAJOR_E
-                Tonic.F -> MAJOR_F
-                Tonic.F_SH -> MAJOR_F_SH
-                Tonic.G_FL -> MAJOR_G_FL
-                Tonic.G -> MAJOR_G
-                Tonic.G_SH -> MAJOR_G_SH
-                Tonic.A_FL -> MAJOR_A_FL
-                Tonic.A -> MAJOR_A
-                Tonic.A_SH -> MAJOR_A_SH
-                Tonic.B_FL -> MAJOR_B_FL
-                Tonic.B -> MAJOR_B
-            }
-        }
-        Scale.MINOR -> {
-            when(tonic) {
-                Tonic.C -> MINOR_C
-                Tonic.C_SH -> MINOR_C_SH
-                Tonic.D_FL -> emptySemitonesArray
-                Tonic.D -> MINOR_D
-                Tonic.D_SH -> MINOR_D_SH
-                Tonic.E_FL -> MINOR_E_FL
-                Tonic.E -> MINOR_E
-                Tonic.F -> MINOR_F
-                Tonic.F_SH -> MINOR_F_SH
-                Tonic.G_FL -> MINOR_G_FL
-                Tonic.G -> MINOR_G
-                Tonic.G_SH -> MINOR_G_SH
-                Tonic.A_FL -> MINOR_A_FL
-                Tonic.A -> MINOR_A
-                Tonic.A_SH -> MINOR_A_SH
-                Tonic.B_FL -> MINOR_B_FL
-                Tonic.B -> MINOR_B
-            }
-        }
-        Scale.CHROMATIC -> {
-            when(tonic) {
-                Tonic.C -> CHROMATIC_C
-                Tonic.C_SH -> CHROMATIC_C_SH
-                Tonic.D_FL -> CHROMATIC_D_FL
-                Tonic.D -> CHROMATIC_D
-                Tonic.D_SH -> CHROMATIC_D_SH
-                Tonic.E_FL -> CHROMATIC_E_FL
-                Tonic.E -> CHROMATIC_E
-                Tonic.F -> CHROMATIC_F
-                Tonic.F_SH -> CHROMATIC_F_SH
-                Tonic.G_FL -> CHROMATIC_G_FL
-                Tonic.G -> CHROMATIC_G
-                Tonic.G_SH -> CHROMATIC_G_SH
-                Tonic.A_FL -> CHROMATIC_A_FL
-                Tonic.A -> CHROMATIC_A
-                Tonic.A_SH -> CHROMATIC_A_SH
-                Tonic.B_FL -> CHROMATIC_B_FL
-                Tonic.B -> CHROMATIC_B
-            }
-        }
-
-    }
-
-
 @Composable
 private fun NewWheel(
-    notesArray: Array<String?>,
+    notesList: List<String?>,
 ) {
     val textMeasurer = rememberTextMeasurer()
 
-    val notes = if(notesArray.size == 12) notesArray else emptySemitonesArray
+    val notes = if(notesList.size == 12) notesList else emptySemitonesList
 
     Canvas(
         modifier = Modifier.fillMaxSize()
@@ -289,7 +225,7 @@ private fun DrawScope.drawTextOnCircle(
 @Composable
 fun SelectorStrip(
     modifier: Modifier = Modifier,
-    texts: Array<String> = arrayOf("A", "B", "C"),
+    texts: List<String> = listOf("A", "B", "C"),
     selectedIndex: Int = 0,
     onSelect: (Int) -> Unit = {},
 ) {
@@ -410,59 +346,6 @@ private fun DrawScope.line(
     )
 }
 
-val MAJOR_C: Array<String?> = arrayOf("C", null, "D", null, "E", "F", null, "G", null, "A", null, "B")
-val MAJOR_C_SH: Array<String?> = arrayOf("C#", null, "D#", null, "E#", "F#", null, "G#", null, "A#", null, "B#")
-val MAJOR_D_FL: Array<String?> = arrayOf("D♭", null, "E♭", null, "F", "G♭", null, "A♭", null, "B♭", null, "C")
-val MAJOR_D: Array<String?> = arrayOf("D", null, "E", null, "F#", "G", null, "A", null, "B", null, "C#")
-val MAJOR_D_SH: Array<String?> = arrayOf("D#", null, "E#", null, "F##", "G#", null, "A#", null, "B#", null, "C##")
-val MAJOR_E_FL: Array<String?> = arrayOf("E♭", null, "F", null, "G", "A♭", null, "B♭", null, "C", null, "C")
-val MAJOR_E: Array<String?> = arrayOf("E", null, "F#", null, "G#", "A", null, "B", null, "C", null, "D#")
-val MAJOR_F: Array<String?> = arrayOf("F", null, "G", null, "A", "B♭", null, "C", null, "D", null, "E")
-val MAJOR_F_SH: Array<String?> = arrayOf("F#", null, "G#", null, "A#", "B", null, "C#", null, "D#", null, "E#")
-val MAJOR_G_FL: Array<String?> = arrayOf("G♭", null, "A♭", null, "B♭", "C♭", null, "D♭", null, "E♭", null, "F")
-val MAJOR_G: Array<String?> = arrayOf("G", null, "A", null, "B", "C", null, "D", null, "E", null, "F#")
-val MAJOR_G_SH: Array<String?> = arrayOf("G#", null, "A#", null, "B#", "C#", null, "D#", null, "E#", null, "F##")
-val MAJOR_A_FL: Array<String?> = arrayOf("A♭", null, "B♭", null, "C", "D♭", null, "E♭", null, "F", null, "G")
-val MAJOR_A: Array<String?> = arrayOf("A", null, "B", null, "C#", "D", null, "E", null, "F#", null, "G#")
-val MAJOR_A_SH: Array<String?> = arrayOf("A#", null, "B#", null, "C##", "D#", null, "E#", null, "F##", null, "G##")
-val MAJOR_B_FL: Array<String?> = arrayOf("B♭", null, "C", null, "D", "E♭", null, "F", null, "G", null, "A")
-val MAJOR_B: Array<String?> = arrayOf("B", null, "C#", null, "D#", "E", null, "F#", null, "G#", null, "A#")
-
-val MINOR_C: Array<String?> = arrayOf("C", null, "D", "E♭", null, "F", null, "G", "A♭", null, "B♭", null)
-val MINOR_C_SH: Array<String?> = arrayOf("C#", null, "D#", "E", null, "F#", null, "G#", "A", null, "B", null)
-val MINOR_D: Array<String?> = arrayOf("D", null, "E", "F", null, "G", null, "A", "B♭", null, "C", null)
-val MINOR_D_SH: Array<String?> = arrayOf("D#", null, "E#", "F#", null, "G#", null, "A#", "B", null, "C#", null)
-val MINOR_E_FL: Array<String?> = arrayOf("E♭", null, "F", "G♭", null, "A♭", null, "B♭", "B", null, "D♭", null)
-val MINOR_E: Array<String?> = arrayOf("E", null, "F#", "G", null, "A", null, "B", "C", null, "D", null)
-val MINOR_F: Array<String?> = arrayOf("F", null, "G", "A♭", null, "B♭", null, "C", "D♭", null, "E♭", null)
-val MINOR_F_SH: Array<String?> = arrayOf("F#", null, "G#", "A", null, "B", null, "C#", "D", null, "E", null)
-val MINOR_G_FL: Array<String?> = arrayOf( "G♭", null, "A♭", "A", null, "B", null, "D♭", "D", null, "E", null)
-val MINOR_G: Array<String?> = arrayOf("G", null, "A", "B♭", null, "C", null, "D", "E♭", null, "F", null)
-val MINOR_G_SH: Array<String?> = arrayOf("G#", null, "A#", "B", null, "C#", null, "D#", "E", null, "F#", null)
-val MINOR_A_FL: Array<String?> = arrayOf("A♭", null, "B♭", "B", null, "D♭", null, "E♭", "E", null, "G♭", null)
-val MINOR_A: Array<String?> = arrayOf("A", null, "B", "C", null, "D", null, "E", "F", null, "G", null)
-val MINOR_A_SH: Array<String?> = arrayOf("A#", null, "B#", "C#", null, "D#", null, "E#", "F#", null, "G#", null)
-val MINOR_B_FL: Array<String?> = arrayOf("B♭", null, "C", "D♭", null, "E♭", null, "F", "G♭", null, "A♭", null)
-val MINOR_B: Array<String?> = arrayOf( "B", null, "C#", "D", null, "E", null, "F#", "G", null, "A", null)
-
-val CHROMATIC_C: Array<String?> = arrayOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
-val CHROMATIC_C_SH: Array<String?> = arrayOf("C#", "D", "D#", "E", "E#", "F#", "G", "G#", "A", "A#", "B", "B#")
-val CHROMATIC_D_FL: Array<String?> = arrayOf("D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B", "C")
-val CHROMATIC_D: Array<String?> = arrayOf("D", "D#", "E", "E#", "F", "G", "G#", "A", "A#", "B", "C", "C#")
-val CHROMATIC_D_SH: Array<String?> = arrayOf("D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B", "C", "C#")
-val CHROMATIC_E_FL: Array<String?> = arrayOf("E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B", "C", "D♭", "D")
-val CHROMATIC_E: Array<String?> = arrayOf("E", "F", "F#", "G", "G#", "A", "A#", "B", "C", "C#", "D", "D#")
-val CHROMATIC_F: Array<String?> = arrayOf("F", "F#", "G", "G#", "A", "A#", "B", "C", "C#", "D", "D#", "E")
-val CHROMATIC_F_SH: Array<String?> = arrayOf("F#", "G", "G#", "A", "A#", "B", "C", "C#", "D", "D#", "E", "F")
-val CHROMATIC_G_FL: Array<String?> = arrayOf( "G♭", "G", "A♭", "A", "B♭", "B", "C", "D♭", "D", "E♭", "E", "F")
-val CHROMATIC_G: Array<String?> = arrayOf("G", "G#", "A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#")
-val CHROMATIC_G_SH: Array<String?> = arrayOf("G", "G#", "A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#")
-val CHROMATIC_A_FL: Array<String?> = arrayOf("A♭", "A", "B♭", "B", "C", "D♭", "D", "E♭", "E", "F", "G♭", "G")
-val CHROMATIC_A: Array<String?> = arrayOf("A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#")
-val CHROMATIC_A_SH: Array<String?> = arrayOf("A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A")
-val CHROMATIC_B_FL: Array<String?> = arrayOf("B♭", "B", "C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A")
-val CHROMATIC_B: Array<String?> = arrayOf( "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#")
-
 @Preview(showBackground = true)
 @Composable
 fun MainScreenPreview() {
@@ -475,12 +358,12 @@ fun MainScreenPreview() {
 
 const val SEMITONES = 12
 const val DELTA_ANGLE = 360F / SEMITONES
-val emptySemitonesArray: Array<String?> = Array(SEMITONES) { null }
-val intervals: Array<String> = arrayOf("T", "2m", "2M", "3m", "3M", "4", "4A", "5", "6m", "6M", "7m", "7M")
+val emptySemitonesList: List<String?> = List(SEMITONES) { null }
+val intervals: List<String> = listOf("T", "2m", "2M", "3m", "3M", "4", "4A", "5", "6m", "6M", "7m", "7M")
 
 // X and Y offset for each semitone positioning
-val xFactor = arrayOf(0f, 0.25f, 0.433f, 0.5f, 0.433f, 0.25f, 0f, - 0.25f, -0.433f, -0.5f, -0.433f, -0.25f)
-val yFactor = arrayOf(-0.5f, -0.433f, -0.25f, 0f, 0.25f, 0.433f, 0.5f, 0.433f, 0.25f, 0f, -0.25f, -0.433f)
+val xFactor = listOf(0f, 0.25f, 0.433f, 0.5f, 0.433f, 0.25f, 0f, - 0.25f, -0.433f, -0.5f, -0.433f, -0.25f)
+val yFactor = listOf(-0.5f, -0.433f, -0.25f, 0f, 0.25f, 0.433f, 0.5f, 0.433f, 0.25f, 0f, -0.25f, -0.433f)
 
 enum class Tonic(val offsetFromC: Int, val representation: String) {
     C(0, "C"),
@@ -510,15 +393,15 @@ enum class Tonic(val offsetFromC: Int, val representation: String) {
     }
 }
 
-enum class Representation(val notes: Array<String>) {
+enum class Representation(val notes: List<String>) {
     MAJOR_SELECTOR(
-        arrayOf("C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B")
+        listOf("C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B")
     ),
     MINOR_SELECTOR(
-        arrayOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "B♭", "B")
+        listOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "B♭", "B")
     ),
     CHROMATIC_SELECTOR(
-        arrayOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
+        listOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
     )
 
 }
