@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
@@ -19,10 +18,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -40,12 +37,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.center
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.des.harmony.model.NotesSolver.notesFor
-import com.des.harmony.model.SHOW_NOTES_WITH_FLAT
-import com.des.harmony.model.SHOW_NOTES_WITH_SHARP
-import com.des.harmony.model.enums.Accidental
-import com.des.harmony.model.enums.PitchClass
-import com.des.harmony.model.enums.Scale
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.des.harmony.model.view.ScaleViewModel
 import com.des.harmony.ui.theme.HarmonyTheme
 
 class MainActivity : ComponentActivity() {
@@ -81,49 +74,34 @@ fun MainScreen(
 @Composable
 fun ScalesScreen(
     modifier: Modifier = Modifier,
+    scaleViewModel: ScaleViewModel = viewModel()
 ) {
-    var selectedScale by remember { mutableStateOf(Scale.MAYOR) }
-    var selectedPitchClass by remember { mutableStateOf(PitchClass.C) }
-    var selectedAccidental by remember { mutableStateOf(Accidental.NATURAL) }
-    var selectorNotes by remember { mutableStateOf(SHOW_NOTES_WITH_FLAT)}
+
+    val scaleShowState by scaleViewModel.uiState.collectAsState()
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            //.fillMaxSize()
             .fillMaxWidth()
-            .height(500.dp)
+            //.fillMaxHeight()
+            //.height(500.dp)
     ) {
         // Scale Selector
         SelectorStrip(
-            texts = Scale.entries.map { it.scaleName },
-            selectedIndex = Scale.entries.indexOf(selectedScale),
-            onSelect = { index ->
-                selectedScale = Scale.entries[index]
-                selectorNotes = when(selectedScale) {
-                    Scale.MAYOR,
-                    Scale.DOMINANT -> SHOW_NOTES_WITH_FLAT
-                    else -> SHOW_NOTES_WITH_SHARP
-                }
-                selectedAccidental = accidentalForPitchAndScale(selectedPitchClass, selectedScale)
-            },
+            texts = scaleViewModel.scalesToShowOnSelector,
+            selectedIndex = scaleViewModel.selectedScaleIndex,
+            onSelect = scaleViewModel::selectScale,
+            modifier = modifier.width(80.dp)
         )
         // Pitch Selector
         SelectorStrip(
-            texts = selectorNotes,
-            selectedIndex = PitchClass.entries.indexOf(selectedPitchClass),
-            onSelect = { index ->
-                selectedPitchClass = PitchClass.entries[index]
-                selectedAccidental = accidentalForPitchAndScale(selectedPitchClass, selectedScale)
-            },
+            texts = scaleShowState.notesToShowOnSelector,
+            selectedIndex = scaleViewModel.selectedPitchIndex,
+            onSelect = scaleViewModel::selectPitch,
             modifier = modifier.width(30.dp)
         )
 
-        val notesToShowOnWheel = notesFor(
-            selectedScale = selectedScale,
-            selectedPitchClass = selectedPitchClass,
-            selectedAccidental = selectedAccidental,
-        )
+        val notesToShowOnWheel = scaleViewModel.notesToShow
 
         NotesWheel(
             notesList = notesToShowOnWheel,
@@ -131,19 +109,6 @@ fun ScalesScreen(
     }
 }
 
-private fun accidentalForPitchAndScale(
-    selectedPitchClass: PitchClass,
-    selectedScale: Scale
-) = if (selectedPitchClass.isNatural) {
-    Accidental.NATURAL
-} else {
-    when (selectedScale) {
-        Scale.MAYOR,
-        Scale.DOMINANT -> Accidental.FLAT
-
-        else -> Accidental.SHARP
-    }
-}
 
 @Composable
 private fun NotesWheel(
